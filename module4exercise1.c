@@ -1,0 +1,35 @@
+/************************************************
+ * filename: module4exercise1.c
+ * Exercise: Module 4, Exercise 1
+ * Name: Maxime Grossman
+ * Date Created: March 20, 2019
+ *
+ * Description: This program reads input up to an equal sign and outputs the following integer.
+ *************************************************/
+
+
+#include<stdio.h>
+#define EQUAL '='
+
+
+int main(void)
+{
+
+	int integer;
+	char ch;
+
+	printf("Enter some text, equal sign, and an integer, then press enter.\n");   //input prompt
+
+	while ((ch = getchar()) != EQUAL)    //as long as the character being read is not the equal sign, enter loop
+		continue;   //as long as character being read is not the equal sign, skip to next loop iteration
+	
+	scanf_s("%d", &integer); //loop exits when an equal sign is read by getchar() ...
+						//... and immediately after the equal sign, integer read by scanf()
+
+	printf("The integer you entered is: %d\n", integer);    //print integer in statement 
+
+	system("pause");
+
+	return 0;
+
+}

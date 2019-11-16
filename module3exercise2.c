@@ -1,0 +1,36 @@
+/************************************************
+ * filename: module3exercise2.c
+ * Exercise: Module 3, Exercise 2
+ * Name: Maxime Grossman
+ * Date Created: March 1, 2019
+ *
+ * Description: This program asks for dimensions of a box and finds its volume and surface area.
+ *************************************************/
+
+#include<stdio.h>
+int main(void)
+
+{
+	float length, height, width;
+
+	printf("Please enter the length, height, and width separated by spaces.\n");
+
+	scanf_s("%f %f %f", &length, &height, &width);  //picks up values
+
+	while (length > 0 && height > 0 && width > 0)  //loop only entered if criteria met
+	{
+		printf("The volume is %.2f\n", length*height*width); //volume calculation
+		printf("The surface area is %.2f\n", 2 * (length*height + length * width + length * height)); //surface area calculation
+		printf("Please enter the length, height, and width of your other box, separated by spaces.\n"); //another prompt
+		scanf_s("%f %f %f", &length, &height, &width); //dimensions assigned new values and run through loop critera
+
+	}
+
+	printf("Thanks for playing!\n");
+
+	printf("Press enter to continue...\n");
+	getchar();
+
+	return 0;
+
+}
