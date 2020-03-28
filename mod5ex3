@@ -1,0 +1,55 @@
+
+/************************************************
+  * filename: module5ex3.c
+  * Exercise: Module 5, Exercise 3
+  * Name: Maxime Grossman
+  * Date Created: March 27, 2020
+  *
+  * Description: The user inputs 10-element int array, and a function returns the largest value.
+  *************************************************/
+
+#include<stdio.h>
+#include<string.h>
+#define NUM 10 
+int largest(int(*ptr));  //function prototype, returns an int and takes a pointer to int as input
+int main(void)
+
+{
+	int n;
+	int values[10]; //array called values will hold 10 int values inputted
+	int * ptr; //ptr is a pointer to an int
+	ptr = &values; //ptr points to the address of values array
+
+	printf("Please enter 10 integers. Press Enter after each integer.\n");   //user inputs after this
+
+	for (n = 0; n < NUM; n++)   //set up loop for 10 values
+		scanf_s("%d", &values[n]); //for each value scanned, assign it to be element n in values array
+
+	printf("The largest value you entered is %d.\n", largest(ptr));  //output statement which runs largest() function
+
+	system("pause");
+
+	return 0;
+
+}
+
+int largest(int(*ptr))
+{
+	int n = 0, m = 1;
+	int big;   //this int will store the biggest value inputted
+
+	while (m < NUM && n<NUM) {  //run loop as long as m and n are less than 10
+
+		if (*(ptr + n) >= *(ptr + m)) {   //compare pointer values
+			big = *(ptr + n);
+			m++;     //if *(ptr+n) is bigger, keep that value and compare to the next element by incremeneting
+		}
+		else {
+			big = *(ptr + m); //if *(ptr+m) is bigger, keep that value and compare to the next element by incrementing
+			n++;
+		}
+	}
+
+	return(big);    
+}
+
