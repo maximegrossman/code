@@ -1,0 +1,73 @@
+
+
+/************************************************
+  * filename: module5ex4.c
+  * Exercise: Module 5, Exercise 4
+  * Name: Maxime Grossman
+  * Date Created: March 30, 2020
+  *
+  * Description: The user inputs 10-element int array, and a function sorts the values in ascending order.
+  *************************************************/
+
+#include<stdio.h>
+#include<string.h>
+#define NUM 10 
+int sort(int(*ptr), int n);  //function prototype, returns an int and takes a pointer to int as input
+int main(void)
+
+{
+	int n, k, j;
+	int values[10]; //array called values will hold 10 int values inputted
+	int storage[10];
+
+	int * ptr; //ptr is a pointer to an int
+	int * ptr2;
+
+	ptr = &values; //ptr points to the address of values array
+	ptr2 = &storage;
+
+	printf("Please enter 10 integers. Press Enter after each integer.\n");   //user inputs after this
+
+	for (n = 0; n < NUM; n++)   //set up loop for 10 values
+		scanf_s("%d", &values[n]); //for each value scanned, assign it to be element n in values array
+
+	printf("You entered the numbers:\n");
+	for (n = 0; n < NUM; n++) {
+		printf("%d \n", *(ptr + n));
+	}
+
+	system("pause");
+
+	printf("The ascending order of integers you entered is:\n");  //output statement which runs largest() function
+
+	for (k = 1; k < 11; k++) {
+		printf("# %d: %d\n", k, (sort(ptr, k)));  //for #n, feed n into function
+	}
+
+	system("pause");
+
+	return 0;
+
+}
+
+int sort(int(*ptr), int n) {   //i.e. if we feed int n = 1
+	
+	int count = 0, m, h;
+
+	for(h=0; h<NUM; h++)   //h is a placeholder number to compare to all other numbers
+	{
+		for (m = 0; m < NUM; m++)  //m is used for the number we'll compare to
+		{
+			if (*(ptr + h) >= (*(ptr + m)))  //take an h and compare it to all numbers
+				count++;					//add 1 to count each time it's greater than a number
+		}
+		if (count == n)     //if the number h is greater than 1 numbers, i.e. it's the lowest, and therefore it matches n = 1
+			break;  //we found our number
+		else
+			count = 0;  //reset the counter and move to a new placeholder h
+	}
+
+	return(*(ptr+h));
+}
+
+
