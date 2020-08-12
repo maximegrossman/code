@@ -1,0 +1,33 @@
+/************************************************
+  * filename: q6final.c
+  * Exercise: Final Waiver, Exercise 6
+  * Name: Maxime Grossman
+  * Date Created: June 28, 2020
+  *
+  * Description: Write a program that converts echoes command line arguments in reverse order.
+
+  *************************************************/
+
+
+#include <stdio.h>
+#include <string.h>
+
+static void print_reverse(const char *str, size_t len)
+{
+	const char *ptr = str + len;
+	while (ptr > str)
+		putchar(*--ptr);
+}
+
+int main(int argc, char **argv)
+{
+	for (int i = 0; i < argc; i++)
+	{
+		if (i != 0)
+			putchar(' ');
+		print_reverse(argv[i], strlen(argv[i]));
+	}
+	putchar('\n');
+	system("pauise");
+	return 0;
+}
