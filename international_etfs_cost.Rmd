@@ -1,0 +1,220 @@
+---
+title: "International vs. Domestic Equity ETF Fees Using U.S.-listed ETF Universe (1,777 ETFs)"
+author: "Maxime Grossman, Lattice Wealth Management"
+date: "8/31/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r}
+
+library(tidyr)
+library(magrittr)
+library(ggplot2)
+library(dplyr)
+
+```
+
+
+downloaded ETF database had about 100 ETF Category rows as N/A
+had to research which categories ETFs fell under
+
+list of ETF equities found on: 
+https://etfdb.com/etfs/asset-class/equity/#etfs__expenses&sort_name=assets_under_management&sort_order=desc&page=1
+
+as of 8/25/21
+
+
+
+```{r}
+
+setwd("C:/Users/Maxime/Desktop/Max's stuff/Lattice Wealth Management/Programming")
+
+etfs <- read.csv("etfs_details_type_fund_flow.csv", as.is=TRUE)
+
+head(etfs)
+
+dim(etfs)
+
+# etfs
+
+```
+
+
+```{r}
+
+# delete some useless columns
+# we make a new df with all old rows but only columns 1,2,22,24
+
+etfs2 <- etfs[,c(1,2, 22, 24)]
+head(etfs2)
+
+nrow(etfs2)
+
+categories <- levels(factor(etfs2$Category))
+categories
+
+```
+
+
+
+```{r}
+
+# order(etfs2$Expense_BPS, decreasing = TRUE)
+
+#etfs2[order(etfs2$Expense_BPS, decreasing = TRUE),]
+
+```
+
+
+
+What is considered international?
+
+"Europe Equities"    
+"Foreign Small & Mid Cap Equities"
+"China Equities"
+"Emerging Markets Equities" 
+"Global Equities"
+"Japan Equities"
+"Asia Pacific Equities" 
+"Foreign Large Cap Equities"
+"Global Real Estate" 
+"Latin America Equities"  
+
+
+
+
+```{r}
+
+# create a new column called International and fill it in with either yes or no
+
+
+etfs2 <- mutate(etfs2, International = (ifelse(etfs2$Category == "Europe Equities" | 
+                                        etfs2$Category == "Foreign Large Cap Equities" |
+                                        etfs2$Category == "China Equities" |
+                                        etfs2$Category == "Emerging Markets Equities" |
+                                        etfs2$Category == "Global Equities" |
+                                        etfs2$Category == "Japan Equities" |
+                                        etfs2$Category == "Asia Pacific Equities" |
+                                        etfs2$Category == "Foreign Small & Mid Cap Equities" |
+                                        etfs2$Category == "Global Real Estate" |
+                                        etfs2$Category == "Latin America Equities", "Yes", "No")))
+
+```
+
+
+```{r}
+
+# analyze international ETF costs
+
+# etfs2
+
+etfsint <- etfs2 %>%
+filter(International == "Yes") 
+
+cat("The mean expense for international equity ETFs is:", mean(etfsint$Expense_BPS), "BPS.")
+
+```
+
+
+```{r}
+
+# analyze domestic ETF costs
+
+etfsdom <- etfs2 %>%
+filter(International == "No") %>%
+  filter(Category != "Leveraged Equities") %>%
+  filter(Category != "Inverse Equities") %>%
+  filter(Category != "Leveraged Bonds") %>%
+  filter(Category != "Volatility Hedged Equity") %>%
+  filter(Category != "MLPs") %>%
+  filter(Category != "Money Market") %>%
+  filter(Category != "Long-Short") %>%
+  filter(Category != "Hedge Fund") %>%
+    filter(Name != "VanEck Vectors BDC Income ETF") %>%   # outlier expenses (~10%)
+    filter(Name != "Virtus Private Credit Strategy ETF")   # outlier expenses (~5%)
+  
+
+cat("The mean expense for domestic equity ETFs is:", mean(etfsdom$Expense_BPS), "BPS.")
+
+
+```
+
+
+
+```{r}
+
+etfs3 <- as.data.frame(rbind(etfsint, etfsdom))
+# etfs3
+typeof(etfs3)
+
+categories2 <- levels(factor(etfs3$Category))
+
+mean_bps <- vector()
+
+for (i in 1:length(categories2)){
+
+mean_bps[i] <- round(mean(etfs3 %>% filter(Category == categories2[i]) %>% .$Expense_BPS), 2)
+
+}
+
+# mean_bps
+
+
+```
+
+
+
+```{r}
+
+results <- data.frame(categories2, mean_bps)
+
+# results
+
+results <- results[order(results$mean_bps, decreasing=TRUE),] 
+
+results
+
+```
+
+
+
+```{r}
+
+par(mar=c(5,10,16,2))
+barplot(height=results$mean_bps, names=results$categories2,
+        horiz=T, las=2, 
+        cex.axis=0.8,
+        cex.lab=0.8,
+        cex.names=0.8,
+        font.axis=1, 
+        font.lab=2, 
+        # ylab="Category", 
+        xlab="Average Expense in BPS", 
+        width = 0.5,
+        xlim = c(0,70),
+        ylim = c(0,2),
+        col="light blue")
+
+
+
+
+```
+
+
+
+
+```{r}
+
+cat("Findings:", "\n\n")
+
+cat("The mean expense for international equity ETFs is:", mean(etfsint$Expense_BPS), "BPS.", "\n\n")
+cat("The mean expense for domestic equity ETFs is:", mean(etfsdom$Expense_BPS), "BPS.")
+
+
+```
+
+
+
+

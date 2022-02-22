@@ -1,0 +1,260 @@
+---
+title: "moneyguide"
+author: "Maxime Grossman"
+date: "9/7/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+
+setwd("C:/Users/Maxime/Desktop/Max's stuff/Lattice Wealth Management/Programming/moneyguide")
+
+```
+
+
+
+1. For stocks, we use S&P 500 Index (SPX index)
+
+
+2. For bonds, we use Bloomberg US Agg Total Return Value Unhedged USD Index (LBUSTRUU index)
+
+The Index is the most widely followed broad market U.S. bond index. It measures the investment grade, US dollar-denominated, fixed-rate taxable bond market. The Index includes treasuries, government-related and corporate securities, mortgage backed securities (agency fixed-rate and hybrid ARM pass-throughs), ABS and collateralized mortgage backed securities (agency and nonagency). It includes securities that have at least one year to maturity, and have an outstanding par value of at least $250 million. It includes global bonds from governments and corporations if they are denominated in the US dollar. Bonds specifically excluded are tax-exempt municipal securities, inflation-linked bonds, floating-rate issues and convertible bonds. The index is market cap weighted and reconstituted on the last business day of the month.
+
+
+3. For cash, we use Bloomberg US Treasury Total Return Unhedged USD Index (LUATTRUU index)
+
+The Bloomberg Barclays U.S. Treasury Bond Index includes public obligations of the US Treasury, ie US government bonds. Certain Treasury bills are excluded by a maturity constraint. In addition, certain special issues, such as state and local government series bonds (SLGs), as well as U.S. Treasury TIPS, are excluded.
+
+
+
+```{r}
+
+setwd("C:/Users/Maxime/Desktop/Max's stuff/Lattice Wealth Management/Programming/moneyguide")
+
+aggmonthly <- read.csv("LBUSTRUU index monthly.csv", as.is=TRUE)
+aggquarterly <- read.csv("LBUSTRUU index quarterly.csv", as.is=TRUE)
+
+spxmonthly <- read.csv("SPX index monthly.csv", as.is=TRUE)
+spxquarterly <- read.csv("SPX index quarterly.csv", as.is=TRUE)
+
+treasmonthly <- read.csv("LUATTRUU index monthly.csv", as.is=TRUE)
+treasquarterly <- read.csv("LUATTRUU index quarterly.csv", as.is=TRUE)
+
+################
+
+head(aggmonthly)   # last date 8/31/2021
+tail(aggmonthly)   # first date 1/30/1976
+
+head(spxmonthly)   # last date 8/31/2021
+tail(spxmonthly)   # first date 12/30/1927
+
+head(treasmonthly)   # last date 8/31/2021
+tail(treasmonthly)   # first date 1/31/1973
+
+################
+
+head(aggquarterly) # last date 6/30/2021
+tail(aggquarterly) # first date 3/31/1976   
+
+head(spxquarterly) # last date 6/30/2021
+tail(spxquarterly) # first date 12/30/1927
+
+head(treasquarterly) # last date 6/30/2021
+tail(treasquarterly) # first date 3/30/1973
+
+
+```
+
+
+Calculate all returns
+
+```{r}
+
+spxmonthlyreturns <- -(round(diff(spxmonthly$PX_LAST)/spxmonthly$PX_LAST[-1], 5))
+aggmonthlyreturns <- -(round(diff(aggmonthly$PX_LAST)/aggmonthly$PX_LAST[-1], 5))
+treasmonthlyreturns <- -(round(diff(treasmonthly$PX_LAST)/treasmonthly$PX_LAST[-1], 5))
+
+spxquarterlyreturns <- -(round(diff(spxquarterly$PX_LAST)/spxquarterly$PX_LAST[-1], 5))
+aggquarterlyreturns <- -(round(diff(aggquarterly$PX_LAST)/aggquarterly$PX_LAST[-1], 5))
+treasquarterlyreturns <- -(round(diff(treasquarterly$PX_LAST)/treasquarterly$PX_LAST[-1], 5))
+
+
+# dates <- russgrow$Date[-length(russgrow)]
+
+
+```
+
+
+
+Monthly correlation between stocks and bonds
+
+
+```{r}
+
+# First we trim SPX data to match the AGG data
+
+which(spxmonthly$Date == "1/30/1976")
+spxmonthlyreturns1 <- spxmonthlyreturns[1:547]
+
+length(aggmonthlyreturns)
+length(spxmonthlyreturns1)
+
+dates1 <- aggmonthly$Date[-length(aggmonthly)]
+
+monthly_returns_spxagg <- data.frame(spxmonthlyreturns1, aggmonthlyreturns)
+
+monthly_returns_spxagg
+
+
+##################
+
+
+monthly_returns_spxagg$rolling_corr <- 
+  runCor(monthly_returns_spxagg$spxmonthlyreturns1, monthly_returns_spxagg$aggmonthlyreturns, n=60)
+
+monthly_returns_spxagg
+
+
+fin1 <- monthly_returns_spxagg$rolling_corr
+
+fin1 <- fin1[-(1:19)]
+
+fin1
+
+plot(fin, main = "Rolling 5 years correlation between monthly stock and bond returns", xlab = "1976 - 2021", ylab = "Correlation")
+
+days <- round(seq(from = 1978, to = 2021, by = 0.08226691), 0)
+
+length(days)
+
+
+plot(runMean(fin, n=10), main = "Average 5 years correlation between monthly stock and bond returns", xlab = "1976 - 2021", ylab = "Correlation")
+
+
+```
+
+
+Quarterly correlation between stocks and bonds
+
+
+
+```{r}
+
+
+# First we trim SPX data to match the AGG data
+
+which(spxquarterly$Date == "3/31/1976")
+spxquarterlyreturns2 <- spxquarterlyreturns[1:181]
+
+
+length(aggquarterlyreturns)
+length(spxquarterlyreturns2)
+
+dates1 <- aggquarterly$Date[-length(aggquarterly)]
+
+quarterly_returns_spxagg <- data.frame(spxquarterlyreturns2, aggquarterlyreturns)
+
+quarterly_returns_spxagg
+
+
+##################
+
+
+quarterly_returns_spxagg$rolling_corr <- 
+  runCor(quarterly_returns_spxagg$spxquarterlyreturns2, quarterly_returns_spxagg$aggquarterlyreturns, n=40)
+
+quarterly_returns_spxagg
+
+
+fin2 <- quarterly_returns_spxagg$rolling_corr
+
+fin2
+
+fin2 <- fin2[-(1:19)]
+
+
+plot(fin, main = "Rolling 10 years correlation between quarterly stock and bond returns", xlab = "1976-2021", ylab = "Correlation")
+
+days <- round(seq(from = 1978, to = 2021, by = 0.08226691), 0)
+
+length(days)
+
+
+plot(runMean(fin, n=10), main = "Average 10 years correlation between quarterly stock and bond returns", xlab = "1976 - 2021", ylab = "Correlation")
+
+
+
+```
+
+
+
+Monthly correlation between stocks and cash (treasuries)
+
+
+```{r}
+
+# First we trim SPX data to match treasury data
+
+which(spxmonthly$Date == "1/31/1973")
+spxmonthlyreturns <- spxmonthlyreturns[1:547]
+
+length(treasmonthlyreturns)
+length(spxmonthlyreturns)
+
+dates1 <- treasmonthly$Date[-length(treasmonthly)]
+
+monthly_returns_spxtreas <- data.frame(spxmonthlyreturns, treasmonthlyreturns)
+
+monthly_returns_spxtreas
+
+
+##################
+
+
+monthly_returns_spxtreas$rolling_corr <- 
+  runCor(monthly_returns_spxtreas$spxmonthlyreturns, monthly_returns_spxtreas$treasmonthlyreturns, n=60)
+
+monthly_returns_spxtreas
+
+
+fin <- monthly_returns_spxtreas$rolling_corr
+
+fin <- fin[-(1:19)]
+
+fin
+
+plot(fin, main = "Rolling 5 years correlation between monthly stock and bond returns", xlab = "1976 - 2021", ylab = "Correlation")
+
+days <- round(seq(from = 1978, to = 2021, by = 0.08226691), 0)
+
+length(days)
+
+
+plot(runMean(fin, n=10), main = "Average 5 years correlation between monthly stock and bond returns", xlab = "1976 - 2021", ylab = "Correlation")
+
+
+```
+
+
+
+```
+
+
+
+
+
+```
+
+
+
+
+
+
+```
+
+
+
+
+
+
+```

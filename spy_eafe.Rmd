@@ -1,0 +1,320 @@
+---
+title: "Lattice"
+author: "Maxime Grossman"
+date: "8/16/2021"
+output: html_document
+---
+
+```{r}
+
+library(quantmod)
+library(PerformanceAnalytics)
+library(tidyr)
+library(ggplot2)
+library(xts)
+
+
+```
+
+```{r setup, include=FALSE}
+
+setwd("C:/Users/Maxime/Desktop/Max's stuff/Lattice Wealth Management")
+
+spy_weekly <- read.csv("SPY_weekly.csv", as.is=TRUE)
+#diamonds <- read.csv("Diamonds.csv", as.is=TRUE)
+
+spy_daily <- read.csv("SPY_daily.csv", as.is=TRUE)
+#diamonds 
+
+```
+
+```{r}
+
+head(spy_daily)
+head(spy_weekly)
+
+spy_daily_close <- spy_daily[c(1,5)]
+spy_daily_close
+
+# spy_daily_close$return <- 
+  
+spy_daily_close$Close[1]
+
+#date.index = index(spy_daily_close)
+#date.index = index(spy_weekly)
+
+
+
+```
+
+```{r}
+
+
+efa_weekly <- read.csv("EFA_weekly.csv", as.is=TRUE)
+efa_daily <- read.csv("EFA_daily.csv", as.is=TRUE)
+
+
+head(efa_daily)
+head(spy_daily)
+
+efa_daily_close <- efa_daily[c(1,5)]
+efa_daily_close
+
+```
+
+
+```{r}
+
+# different start dates
+# same end dates
+# delete the first 2165 rows of spy_daily_close
+
+nrow(spy_daily_close)
+nrow(efa_daily_close)
+
+```
+
+```{r}
+
+# get the same start dates, 08/27/2001
+
+spy_daily_close_adj <- spy_daily_close[2166:7188,]
+
+spy_daily_close_adj
+efa_daily_close
+
+# each df has 5023 rows, from 08/27/2001 to 08/13/2021
+
+```
+
+
+```{r}
+
+# change <- diff(spy_daily_close_adj$Close)/lag(spy_daily_close_adj$Close)
+
+spy_daily_prices <- spy_daily_close_adj$Close
+spy_daily_returns <- round(diff(spy_daily_prices)/spy_daily_prices[-length(spy_daily_prices)], 5)
+
+
+```
+
+
+```{r}
+
+
+spy_daily_close_adj2 <- spy_daily_close_adj[-1,]  # delete 1st row (no return for 1st date)
+spy_daily_close_adj2$spy_daily_returns <- spy_daily_returns  # tack on new vector 
+spy_daily_close_adj2
+
+```
+
+
+```{r}
+
+efa_daily_prices <- efa_daily$Close
+efa_daily_returns <- round(diff(efa_daily_prices)/efa_daily_prices[-length(efa_daily_prices)], 5)
+
+
+efa_daily_close_adj <- efa_daily_close[-1,]
+efa_daily_close_adj$efa_daily_returns <- efa_daily_returns
+
+efa_daily_close_adj
+
+
+
+```
+
+
+```{r}
+
+# We want to combine the 2 dfs
+
+spy_daily_close_adj2$efa_daily_returns <- efa_daily_returns
+
+total_returns <-  spy_daily_close_adj2[,-2]
+
+total_returns
+
+#plot(total_returns$Date, total_returns$spy_daily_returns)
+
+
+ggplot(data = total_returns) +
+  geom_point(mapping = aes(x=Date, y=spy_daily_returns), color="blue") +
+  geom_point(mapping = aes(x=Date, y=efa_daily_returns), color="red") 
+  labs(title = "SPY Daily Returns vs EFA Daily Returns", x = "Date", y = "Daily Returns")  # labs for labels
+
+  
+ggplot(data = total_returns) +
+  geom_line()
+
+  
+```
+
+```{r}
+
+
+
+ggplot(data = total_returns) +
+  geom_point(mapping = aes(x=Date, y=spy_daily_returns), color="blue") +
+  geom_point(mapping = aes(x=Date, y=efa_daily_returns), color="red") 
+  labs(title = "SPY Daily Returns vs EFA Daily Returns", x = "Date", y = "Daily Returns")  # labs for labels
+  
+
+
+  
+
+```
+
+```{r}
+
+
+return.lm <- lm(spy_daily_returns ~ efa_daily_returns, data = total_returns)
+
+return.lm2 <- lm(efa_daily_returns ~ spy_daily_returns, data = total_returns)
+
+
+return.lm
+
+return.lm2
+
+
+
+cat("Intercept is:", return.lm2$coefficients[1], "\n")
+cat("Slope is:", return.lm2$coefficients[2])
+
+
+
+ggplot(return.lm2) +
+  geom_point(mapping = aes(x=spy_daily_returns, y = efa_daily_returns), shape=1, size=3)+
+  geom_abline(intercept = return.lm2$coefficients[1], slope = return.lm2$coefficients[2], 
+              color="red")
+
+
+ggplot(total_returns) +
+  geom_point(mapping = aes(x=spy_daily_returns, y = efa_daily_returns), shape=3, size=2, color="blue")+
+  geom_abline(intercept = return.lm2$coefficients[1], slope = return.lm2$coefficients[2], 
+              color="red")
+
+
+ggplot(total_returns) +
+  geom_point(mapping = aes(x=efa_daily_returns, y = spy_daily_returns), shape=3, size=2, color="blue")+
+  geom_abline(intercept = return.lm2$coefficients[1], slope = return.lm2$coefficients[2], 
+              color="red")
+
+
+```
+
+```{r}
+
+
+total_returns$rolling_corr <- runCor(total_returns$spy_daily_returns, total_returns$efa_daily_returns, n=5)
+
+
+
+total_returns <- as.data.frame(total_returns)
+
+
+date <- as.Date(as.character(total_returns$Date), "%Y-%m-%d")
+
+date
+
+library(xts)
+
+fin <- xts(total_returns$rolling_corr, date)
+
+fin <- fin[-(1:4)]
+
+plot(fin, type="l", col="purple", lwd=0.5, main="SPY and EFA 5-day rolling daily return correlations", ylim=c(-1,1), xlab="Date", ylab="Correlation")
+
+
+
+```
+
+
+```{r}
+
+correl <- vector()
+
+for(i in 1:10){
+correl[i] <- cor(efa_daily_returns[1:i+1], spy_daily_returns[1:i+1], method = "pearson")
+}
+
+
+efa_daily_close_adj %>%
+  filter("Date"=="2001-08-28")
+
+
+```
+
+
+
+
+```
+
+
+
+
+```
+
+
+ggplot(data = mpg) +
+  geom_smooth(mapping = aes(x=displ, y=hwy)) +
+  geom_point(mapping = aes(x=displ, y=hwy)) +  
+  geom_point(mapping=aes(x=3, y = 30), color = "purple") +  # add a purple point
+  geom_text(mapping = aes(x=3, y=31, label = "New Point"), size=4) +  # text for adding word
+  labs(title = "New Plot", x = "Engine Weight", y = "Highway mpg")  # labs for labels
+
+
+```
+
+
+
+
+```
+
+
+
+
+```
+
+
+
+
+```
+
+
+
+
+```
+
+
+
+
+```
+
+
+
+
+```
+
+
+
+
+
+```
+
+
+
+
+
+
+```
+
+
+
+
+
+
+
+
+

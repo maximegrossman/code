@@ -1,0 +1,310 @@
+---
+title: "Russell 3000 Value vs. Russell 3000 Growth"
+author: "Maxime Grossman, Lattice Wealth Management"
+date: "8/31/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+
+
+```{r}
+
+
+
+#install.packages("broom", type="binary")
+
+library(quantmod)
+library(PerformanceAnalytics)
+library(tidyr)
+library(ggplot2)
+library(xts)
+library(rlang)
+library(magrittr)
+
+#install.packages("Rcpp")
+
+
+cat("What Is the Russell 3000 Value Index?", "\n\n",
+"Russell 3000 Value Index is a market-capitalization weighted equity index maintained by the Russell Investment Group and based on the Russell 3000 Index, which measures how U.S. stocks in the equity value segment perform by including only value stocks.", "\n\n")
+
+
+cat("What Is the Russell 3000 Growth Index?", "\n\n",
+"The Russell 3000 Growth Index is a market capitalization-weighted index maintained by the Russell Investment Group and based on the Russell 3000 index. The Russell 3000 Growth Index only includes companies that display signs of above-average growth. The index is used to provide a gauge of the performance of growth stocks in the United States.", "\n\n")
+
+cat("Here, we use daily last prices of both indexes from 05/31/1995 through 08/24/2021.")
+
+```
+
+
+```{r}
+
+
+setwd("C:/Users/Maxime/Desktop/Max's stuff/Lattice Wealth Management/Programming")
+
+russval <- read.csv("russ3000val.csv", as.is=TRUE)
+
+russgrow <- read.csv("russ3000grow.csv", as.is=TRUE)
+
+russval <- russval[c(1,2)]
+#russval
+russgrow <- russgrow[c(1,2)]
+#russgrow
+
+
+```
+
+
+```{r}
+
+# calculate returns
+# 1st row is most recent date
+# take difference and divide by all PX_LAST except most recent (no return for it)
+
+
+russgrowreturns <- -(round(diff(russgrow$PX_LAST)/russgrow$PX_LAST[-1], 5))
+
+
+#diff(russgrow$PX_LAST)
+head(russgrowreturns)
+
+
+```
+
+
+```{r}
+
+russvalreturns <- -(round(diff(russval$PX_LAST)/russval$PX_LAST[-1], 5))
+
+#diff(russval$PX_LAST)
+head(russvalreturns)
+
+
+```
+
+
+```{r}
+
+
+dates <- russgrow$Date[-length(russgrow)]
+
+total_returns <- data.frame(dates, russgrowreturns, russvalreturns)
+
+#total_returns
+
+```
+
+
+
+```{r}
+
+
+
+ggplot(data = total_returns) +
+  geom_point(mapping = aes(x=dates, y=russgrowreturns), color="blue") +
+  geom_point(mapping = aes(x=dates, y=russvalreturns), color="red") +
+  labs(title = "Russell 3000 Value Daily Returns vs Russell 3000 Growth Daily Returns", x = "Date", y = "Daily Returns")  # labs for labels
+
+
+
+```
+
+
+
+```{r}
+
+
+ggplot(data = total_returns) +
+  geom_col(mapping = aes(x=dates, y=russgrowreturns, color="blue")) +
+  geom_col(mapping = aes(x=dates, y=russvalreturns, color="red")) +
+  labs(title = "Russell 3000 Value Returns vs Russell 3000 Growth Returns", x = "May 1995 through August 2021", y = "Daily Returns")+
+     scale_color_identity(name = "Key",
+                          breaks = c("red", "blue"),
+                          labels = c("Value", "Growth"),
+                          guide = "legend")
+    # theme(legend.position = c(0.92, 0.50), legend.background = element_rect(fill = "white", color = "black", linetype = 1), legend.title = element_blank()) 
+
+
+
+
+```
+
+
+
+
+```{r}
+
+
+return.lm <- lm(russgrowreturns ~ russvalreturns, data = total_returns)
+
+return.lm
+
+
+cat("Intercept is:", return.lm$coefficients[1], "\n")
+cat("Slope is:", return.lm$coefficients[2])
+
+
+
+ggplot(return.lm) +
+  geom_point(mapping = aes(x=russgrowreturns, y = russvalreturns), shape=2, size=2)+
+  geom_abline(intercept = return.lm$coefficients[1], slope = return.lm$coefficients[2], 
+              color="blue") + 
+  labs(title = "Linear Regression of Value vs. Growth Returns", x = "Russell Growth", y = "Russell Value")   # labs for labels
+
+
+
+
+```
+
+
+
+```{r}
+
+
+
+p <- 30  # rolling periods
+
+##### ROLLING 30 DAYS DAILY RETURN!
+
+total_returns$rolling_corr <- runCor(total_returns$russgrowreturns, total_returns$russvalreturns, n=p, cumulative = TRUE)
+
+
+
+total_returns <- as.data.frame(total_returns)
+
+total_returns
+
+library(xts)
+
+fin <- total_returns$rolling_corr
+
+fin <- fin[-(1:29)]
+head(fin)
+
+
+```
+
+
+```{r}
+
+
+plot(fin, type="l", col="blue", lwd=0.5, main="Russell Value vs Growth 30-day rolling daily return correlations, 1995-2021", ylim=c(0,1.1), xlab="May 1995 through August 2021", ylab="Correlation", tck=5)
+abline(v=as.numeric(as.Date('2010-07-01')))
+
+ggplot(total_returns[-(1:4),], aes(dates, rolling_corr)) +
+  geom_point()
+
+smoothScatter(fin, main="Russell Value vs Growth 30-day rolling daily return correlations", ylim=c(-1,1))
+
+
+plot(total_returns$dates, total_returns$rolling_corr)
+
+cat("The average 30-day rolling correlation between daily Russell 3000 Value returns and daily Russell 3000 Growth returns is:", mean(total_returns$rolling_corr, na.rm=TRUE))
+
+```
+
+
+
+```{r}
+
+# 2/19/2020 to	3/23/2020
+
+start1 <- which(total_returns$dates == "2/19/2020")
+end1 <- which(total_returns$dates == "3/23/2020")
+
+start1
+end1
+
+plot(fin[(start1):end1], main="Correlations during bear market 2020-02-19 to 2020-03-23", ylim=c(-1.1,1.1), xlab="2020-02-19 to 2020-03-23")
+
+
+
+# 1/6/2009	to 3/9/2009
+
+start2 <- which(total_returns$dates == "1/6/2000")
+end2 <- which(total_returns$dates == "3/9/2009")
+
+start2
+end2
+
+plot(fin[(start2):(end2)], main="Correlations during bear market 2009-01-06 to 2009-03-09", ylim=c(-1.1,1.1), xlab="2009-01-06 to 2009-03-09")
+
+
+# 10/9/2007	to 11/20/2008
+
+start3 <- which(total_returns$dates == "10/9/2007")
+end3 <- which(total_returns$dates == "11/20/2008")
+
+start3
+end3
+
+plot(fin[(start3):(end3)], main="Correlations during bear market 2007-10-09 to 2008-11-20", ylim=c(-1.1,1.1), xlab="2007-10-09 to 2008-11-20")
+
+
+# 1/4/2002	to 10/9/2002
+
+start4 <- which(total_returns$dates == "1/4/2002")
+end4 <- which(total_returns$dates == "10/9/2002")
+
+start4
+end4
+
+plot(fin[(start4):(end4)], main="Correlations during bear market 2002-01-04 to 2002-10-09", ylim=c(-1.1,1.1), xlab="2002-01-04 to 2020-10-09")
+
+
+
+# 3/24/2000	to 9/21/2001
+
+
+start5 <- which(total_returns$dates == "3/24/2000")
+end5 <- which(total_returns$dates == "9/21/2001")
+
+start5
+end5
+
+plot(fin[(start5):(end5)], main="Correlations during bear market 2000-03-24 to 2001-09-21", ylim=c(-1.1,1.1), xlab="2000-03-24 to 2001-09-21")
+
+
+# 8/25/1987	to 12/4/1987
+
+
+```
+
+
+
+```{r}
+
+
+a <- mean(fin[start1:end1])
+b <- mean(fin[start2:end2])
+c <- mean(fin[start3:end3])
+d <- mean(fin[start4:end4])
+e <- mean(fin[start5:end5])
+
+f <- mean(fin[30:start1])
+g <- mean(fin[end1:start2])
+h <- mean(fin[end2:start3])
+i <- mean(fin[end3:start4])
+i <- mean(fin[end4:start5])
+j <- mean(fin[start5:length(fin)])
+
+
+cat("Rolling 30-day correlation of bear market periods:", (a+b+c+d+e)/5, "\n")
+cat("Rolling 30-day correlation of non-bear market periods:", (e+f+g+h+i+j)/6)
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+

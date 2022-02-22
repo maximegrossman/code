@@ -1,0 +1,104 @@
+---
+title: International vs. Domestic Equity ETF Fees Using Largest U.S.-listed ETFs (373
+  ETFs)
+author: "Maxime Grossman, Lattice Wealth Management"
+date: "8/31/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r}
+
+library(tidyr)
+library(magrittr)
+library(ggplot2)
+library(dplyr)
+
+```
+
+
+
+
+International equity ETFs defined by:
+1. https://etfdb.com/themes/international-equity-etfs/#complete-list__expenses&sort_name=expense_ratio&sort_order=asc&page=1
+2. https://etfdb.com/etfdb-category/foreign-small-mid-cap-equities/#etfs__expenses&sort_name=assets_under_management&sort_order=desc&page=1
+3. https://etfdb.com/etfdb-category/emerging-markets-equities/
+
+
+
+Domestic equity ETFs defined by:
+1. https://etfdb.com/etfs/country/us/#etfs__expenses&sort_name=assets_under_management&sort_order=desc&page=1
+
+
+
+```{r}
+
+
+setwd("C:/Users/Maxime/Desktop/Max's stuff/Lattice Wealth Management/Programming")
+
+etfs <- read.csv("largest_etfs_int_and_dom.csv", as.is=TRUE)
+
+etfs <- as.data.frame(etfs)
+
+#etfs
+
+```
+
+
+
+```{r}
+
+
+
+ggplot(data = etfs) +
+  geom_point(mapping = aes(x = Region, y = (Expense.Ratio), color=factor(Region)), shape=2, size=7)+
+  labs(title = "International Equity ETFs vs. Domestic Equity ETFs", x = "ETFs", y = "Expense in BPS")
+
+
+
+
+ggplot(etfs) +
+    geom_bar( aes(x=Symbol, y=Expense.Ratio, color=Region), stat="identity", fill="skyblue", alpha=1) +
+  labs(title = "International Equity ETFs vs. Domestic Equity ETFs", x = "ETFs", y = "Expense in BPS")
+
+
+```
+
+
+```{r}
+
+etfsint <- etfs %>% filter(etfs$Region == "International")
+
+etfsdom <- etfs %>% filter(etfs$Region == "Domestic")
+
+
+cat("The mean expense for the top international equity ETFS is:", round(mean(etfsint$Expense.Ratio),3), " BPS.", "\n")
+cat("The mean expense for the top domestic equity ETFS is:", round(mean(etfsdom$Expense.Ratio),3), " BPS.", "\n\n")
+
+
+
+```
+
+
+
+
+
+
+
+
+
+```
+
+
+
+
+
+```
+
+
+
+
+
+```
+
