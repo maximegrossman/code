@@ -1,0 +1,382 @@
+---
+title: "Homework 4"
+author: "Maxime Grossman (UNI: mmg2240)"
+date: "6/10/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+
+# Part I: Split/Apply/Combine and tidyverse warm-up
+
+# Problem 1
+
+## Replicate the above loop using the **Split/Apply/Combine** model with base R commands.
+
+
+```{r}
+library(plyr)
+library(dplyr)
+library(ggplot2)
+library(readr)
+
+```
+
+```{r}
+
+iris.split <- split(iris, iris$Species)
+
+
+three.mean <- function(df){
+  
+  return(apply(df[, c("Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width")], 2, mean)) 
+  
+}
+
+iris.split.mean <- sapply(iris.split, three.mean)
+
+iris.split.mean
+               
+```
+
+
+# Problem 2
+
+## Repeat question 1 by constructing a pipe, including the **split()** function from base R and **map_df()** from the **purrr** package. 
+
+
+```{r}
+
+library(purrr)
+
+Measurement <- c("Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width")
+
+iris %>%
+  split(iris$Species) %>%
+  map_df(three.mean) %>%
+  cbind(Measurement,.)
+
+
+```
+
+
+# Part II: More tidyverse with CDC cancer data
+
+## Consider the Center of Disease Control data set **BYSITE_new.csv**, which describes the incidence and mortality counts of several types of cancer over time. The variables of interest are:  **YEAR**, **RACE**, **SITE**, **EVENT_TYPE**, **COUNT** and **POPULATION**.  
+
+# Problem 3
+
+## Load in the dataset **BYSITE_new.csv** using the appropriate function from the **readr** package. Display the dimension of the cancer tibble.
+
+
+## Base R code for reference.
+
+```{r}
+# Base R code for reference
+cancer <- read.csv("BYSITE_new.csv",header=T)
+dim(cancer)
+```
+
+## **Solution goes below**
+
+```{r}
+
+cancer <- read_csv("BYSITE_new.csv", col_names = TRUE)
+
+cancer <- as_tibble(cancer)
+
+head(cancer)
+dim(cancer)
+
+```
+
+# Problem 4
+
+## Using Base R or tydyverse functions, identify any strange symbols that are recorded in the **COUNT** variable. Once you have identified the symbols, use functions from the **dplyr** package to remove any rows in the cancer tibble containing these symbols and then convert **COUNT** to a numeric mode. 
+
+
+```{r}
+
+head(table(cancer$COUNT), 50)
+
+tail(table(cancer$COUNT), 50)
+
+
+# select(cancer, COUNT)
+
+dim(cancer)
+
+#cancer %>%
+#  filter(COUNT >= 0) 
+
+#cancer %>%
+#  filter(COUNT == "." | COUNT == "~")
+
+#cancer %>%
+ # filter(COUNT != "." | COUNT != "~")
+
+
+#cancer %>%
+ # which(COUNT == ".")
+
+
+v1 <- which(cancer$COUNT == ".")
+v2 <- which(cancer$COUNT == "~")
+
+v3 <- c(v1,v2)
+
+
+length(v1)
+length(v2)
+length(v3)
+
+cancer <- cancer[-v3,]
+
+dim(cancer)
+
+44982-(633+6195)
+
+cancer$COUNT <- as.numeric(cancer$COUNT)
+
+is.numeric(cancer$COUNT)
+
+
+```
+
+
+### We first use the table function to look at the summarized data. Immediately we notice that there are 633 entries with a "." as COUNT, and 6,195 entries with a "~" as COUNT. Note: 633 + 6,195 = 6,828.
+
+### We can use the which() function to figure out which rows contain these two symbols. After deleting these rows, we find the length of our new object, which is now 38,154. 
+
+### This length corroborates perfectly with our observation because starting out with 44,982 rows, if we subtract (633 + 6,195) rows, we end up with 38,154 rows.
+
+### As a double check, we force the remaining values as numeric with as.numeric(), and do a check using is.numeric() on the new object, which returns TRUE. All values are now integers and there are no strange characters.
+
+
+
+# Problem 5
+
+## For a specific tumor and population, a crude rate is calculated by dividing the number of new cancers observed during a given time period by the corresponding number of people in the population at risk. For cancer, the result is usually expressed as an annual rate per 100,000 persons at risk. https://ci5.iarc.fr/ci5plus/pages/glossary.aspx
+
+## In reference to our data, this quantity can be calculated by: 
+\[
+\text{CRUDE RATE} = 100000*\frac{\text{COUNT}}{\text{POPULATION}}
+\]
+
+## Using relevant functions from the **dplyr** package, create a new variable in your dataframe (or tibble) called **CRUDE_RATE**.  Then using base R graphics or ggplot, create a histogram of **CRUDE_RATE**.  Note that the crude rates are not bounded between [0,1] because they are calculated per 100,000 persons at risk. 
+
+```{r}
+
+
+cancer <- cancer %>%
+  mutate(CRUDE_RATE = 100000*COUNT/POPULATION)
+
+hist(cancer$CRUDE_RATE, breaks=30, main = "Histogram of Crude Rate", xlab = "Crude Rate", col="yellow")
+
+
+```
+
+
+# Problem 6
+
+##Compute the average incidence rate of prostate cancer for each level of **RACE**.  To solve this problem, students must build a pipe (**magrittr** package) and utilize the appropriate functions from the **dplyr** package. Also compare your results to a base R solution. Include both the tidyverse and base R solutions in your final write-up. **Note:** before computing the average incidence rates, students should filter the data as follows:
+\begin{enumerate}
+\item[i.] Extract the rows corresponding to {\bf EVENT\_TYPE} level {\bf Incidence}
+\item[ii.] Extract the rows corresponding to {\bf SITE} level {\bf Prostate}
+\item[iii.] Extract the rows corresponding to {\bf SEX} level {\bf Male}
+\item[iv.] Remove the rows corresponding to {\bf YEAR} level {\bf 2010-2014}
+\item[v.] Remove the rows corresponding to {\bf RACE} level {\bf All Races} 
+\end{enumerate} 
+
+
+##**Solution goes below**
+
+### First we do it via dplyr: 
+
+```{r}
+
+#levels(factor(cancer$RACE))
+
+#levels(factor(cancer$SITE))
+
+head(cancer)
+
+cancer.filter <- cancer %>%
+  filter(EVENT_TYPE == "Incidence") %>%
+  filter(SITE == "Prostate") %>%
+  filter(SEX == "Male") %>%
+  filter(YEAR != "2010-2014") %>%
+  filter(RACE != "All Races")
+
+
+```
+
+### Compute the average incidence rate of prostate cancer for each level of **RACE**.
+
+```{r}
+
+cancer.filter
+
+# average incidence rate 
+
+cancer.filter %>%
+  split(.$RACE) %>%
+  map(~ mean(.$CRUDE_RATE)/100000)
+
+# average incidence rate per 100,000 people
+
+cancer.filter %>%
+  split(.$RACE) %>%
+  map(~ mean(.$CRUDE_RATE))
+
+
+```
+
+### Since the crude rate is the count divided by the population times 100,000, this value is essentially the incidence rate but scaled up by 100,000. We simply take the mean of this value per each race and divide back by 100,000 to get the average incidence rate.
+
+### If we want the average incidence rate per 100,000 people, we take the average of the crude rate per each race.
+
+## Now we do it via Base R:
+
+```{r}
+
+# Base R 
+
+cancer <- cancer[cancer$EVENT_TYPE == "Incidence" & 
+                   cancer$SITE=="Prostate" & 
+                   cancer$SEX == "Male" &
+                   cancer$YEAR != "2010-2014" &
+                   cancer$RACE != "All Races",]
+
+cancer.split <- split(cancer, cancer$RACE)
+
+mean1 <- function(df){
+  mean(df$CRUDE_RATE)
+}
+
+# We can use either of these options: 
+
+sapply(cancer.split, mean1)
+
+ddply(cancer, .(RACE), mean1)
+
+```
+
+
+# Problem 7
+
+Create a plot in base R or ggplot that shows the incidence rate (**CRUDE_RATE**) as a function of time (**YEAR**), split by the levels of **RACE**. Make sure to include a legend and label the graphic appropriately. Before constructing the graphic, perform the data wrangling tasks using a pipe and functions from the **dplyr** package, i.e., the same filtering tasks from problem 6. Students can use some base R functions in the pipe if needed and the plotting code can be included inside or outside the pipe.  
+
+**Solution goes below**
+
+```{r}
+
+# The results of the same data wrangling tasks from problem 6 were 
+# stored as our variable cancer.filter
+
+head(cancer.filter)
+
+# plot(cancer.filter$YEAR, cancer.filter$CRUDE_RATE, col = "RACE") ### USE THIS
+
+ggplot(cancer.filter) +
+  geom_point(mapping = aes(x=YEAR, y = CRUDE_RATE, color = RACE), size = 3)+
+  labs(title = "Incidence Rates of Prostate Cancer in Men", y = "Incidence Rate per 100,000") +
+  theme(plot.title = element_text(hjust=0.5)) + 
+  theme(legend.background = element_rect(fill = "white", color = "black", linetype = 1), legend.title = element_blank()) +
+  theme(axis.text.x = element_text(face="bold", color="black", size=12, angle=90)) +
+  theme(axis.title.x = element_text(color = "blue", size = 1, face = "bold"))
+
+
+```
+
+# Problem 8
+
+## Fit five simple linear regression models, one for each level of **RACE**, relating the incidence rate (**CRUDE_RATE**) as a function of time (**YEAR**). Collect the estimated slopes, t-statistics and  p-values of your estimated models. The collection of slopes describe whether cancer has increased or decreased over the selected time period and the p-values describe if the increase or decrease is statistically significant. Solve this problem using a pipe and functions from the **dplyr** and **purrr** packages. **Note:** use the same filtered data from problem 4 and problem 4 in this analysis. 
+
+## **Some hints:** (i) this exercise is a natural extension of problem 7; (ii) if needed, students can also define their own functions used in the pipe; (iii) students are not required to use a single pipe to solve this question but it's a fun challenge if interested.
+
+## **Solution goes below**
+
+```{r}
+
+
+cancer.lm <- function(df){
+  return(coef(lm(CRUDE_RATE ~ YEAR, data = df)))
+  
+}
+
+cancer.filter %>%
+  split(.$RACE) %>%
+  map(cancer.lm)
+
+```
+
+
+
+```{r}
+
+cancer.filter$YEAR <- as.numeric(cancer.filter$YEAR)
+
+cancer.summ <- cancer.filter %>%
+  split(.$RACE) %>%
+  map(~lm(CRUDE_RATE ~ YEAR, .)) %>%
+  map(summary)
+
+# slopes
+
+slopes <- NA
+
+slopes[1] <- coef(cancer.summ$`American Indian/Alaska Native`)[2,1]
+slopes[2] <- coef(cancer.summ$`Asian/Pacific Islander`)[2,1]
+slopes[3] <- coef(cancer.summ$Black)[2,1]
+slopes[4] <- coef(cancer.summ$Hispanic)[2,1]
+slopes[5] <- coef(cancer.summ$White)[2,1]
+
+
+print("Slopes for American Indian/Alaska Native, Asian/Pacific Islander, Black, Hispanic, White:")
+
+
+slopes
+
+
+# p-value
+
+p.values <- NA
+
+
+p.values[1] <- coef(cancer.summ$`American Indian/Alaska Native`)[2,4]
+p.values[2] <- coef(cancer.summ$`Asian/Pacific Islander`)[2,4]
+p.values[3] <- coef(cancer.summ$`Black`)[2,4]
+p.values[4] <- coef(cancer.summ$`Hispanic`)[2,4]
+p.values[5] <- coef(cancer.summ$`White`)[2,4]
+
+
+
+print("Slopes for American Indian/Alaska Native, Asian/Pacific Islander, Black, Hispanic, White:")
+
+
+
+p.values
+
+# t-statistic
+
+t.stats <- NA
+
+t.stats[1] <- coef(cancer.summ$`American Indian/Alaska Native`)[2,3]
+t.stats[2] <- coef(cancer.summ$`Asian/Pacific Islander`)[2,3]
+t.stats[3] <- coef(cancer.summ$`Black`)[2,3]
+t.stats[4] <- coef(cancer.summ$`Hispanic`)[2,3]
+t.stats[5] <- coef(cancer.summ$`White`)[2,3]
+
+
+
+print("Slopes for American Indian/Alaska Native, Asian/Pacific Islander, Black, Hispanic, White:")
+
+
+t.stats
+
+
+```
+
+

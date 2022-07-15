@@ -1,0 +1,398 @@
+---
+title: "Homework 1"
+author: "Maxime Grossman (UNI: mmg2240)"
+date: "5/10/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+# Statistics GU4206/GR5206
+#
+# Part 1: Loading, Cleaning, the Exploring Data in R
+#
+## i. Load the data into a dataframe called housing.
+
+
+```{r}
+
+housing <- read.csv("NYChousing.csv", header=TRUE, stringsAsFactors = FALSE)
+
+# summary(housing)
+
+```
+#
+## ii. How many rows and columns does the dataframe have?
+
+```{r}
+
+head(housing, 10)
+tail(housing, 10)
+
+ncol(housing)
+nrow(housing)
+
+```
+
+### There are a couple ways to do this. We can view the head and tail and read off the table, "1-5 of 22 columns," so we see 22 columns, or view the tail and see the last row numbered as 2,506.
+
+### We are given that there are 22 columns, and by viewing the tail, can see that there are 2,506 rows.
+
+#
+
+## iii.  Run the appropriate function to display the variable names of the dataframe.
+
+
+```{r}
+
+colnames(housing)
+
+```
+
+#
+## iv.  Run this command, and explain, in words, what this does:
+## apply(is.na(housing), 2, sum).
+
+```{r}
+
+# Let's check this part of the code:
+
+head(is.na(housing))
+
+apply(is.na(housing), 2, sum)
+
+```
+
+### is.na() is a function which checks if values are missing or NA; a TRUE or FALSE is returned;
+### apply() is a command which applies a function to a data set; its first argument is the data set, its second argument,
+### "2", indicates application to column by column (as opposed to row by row), and "sum" is the function applied
+
+### See: https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/apply.
+
+### To summarize, we are counting the number of NA values in each column by counting the TRUE values.
+
+#
+## v.  Remove the rows of the dataset for which the variableValueis NA.
+
+```{r}
+
+
+newhousing <- housing[apply(is.na(housing), 1, sum)==0,]   
+
+
+# only select rows where sum of number of NA's is 0
+# we don't select columns where the sum of number of NA's is 0 because it's inevitable that every column would have some NA in it
+# we only want to remove specific observations where an NA is present 
+
+head(newhousing)
+# call the new dataframe without NA values "newhousing"
+
+```
+
+### We now have 630 rows.
+
+#
+
+## vi. How many rows did you remove with the previous call?  Does this agree with your resultfrom (iv)?
+
+```{r}
+
+numberrows <- nrow(newhousing)
+
+omit <- 2506 - numberrows
+
+sprintf("We omitted %i rows.", omit)
+
+```
+
+### It seems reasonable to omit 1,876 rows as the column REACNumber by itself contained 1,873 NA values.
+### If we removed less than 1,873 rows then our result would be incorrect.
+### Thus we can assume that all but 3 other NA values in all other columns coincided with these 1,873 REACNumber NA values.
+
+#
+## vii.  Calculate the third quartile of the property values, i.e., the third quartile Q3 is the 75th percentile.  Use the quantile() function to complete this task.
+
+```{r}
+
+q3 <- quantile(newhousing[,"Value"], probs=0.75)
+q3
+
+```
+
+#
+
+## viii.  Create a new variable in the dataset called HighValue that is equal to “High” if the property’s value is greater than Q3 and is equal to “NotHigh” if the property’s value is less than or equal to Q3.
+
+
+```{r}
+
+
+HighValue <- c(rep("NotHigh", numberrows))  
+
+newhousing2 <- data.frame(newhousing, HighValue, stringsAsFactors=FALSE)
+head(newhousing2)
+
+### Call the new dataframe with the HighValue column "newhousing2"
+
+```
+
+### We label all observations as "NotHigh" by default, and change the value if criteria is met
+
+
+
+```{r}
+
+
+newhousing2$HighValue[(newhousing2$Value)>q3] <- "High"
+
+# other ways we could've done this:
+
+# ifelse(newhousing2$Value > q3, newhousing2$HighValue <- "High",
+#       newhousing2$HighValue <- "NotHigh")
+
+
+# t <- which(newhousing2["Value"]>q3)
+#newhousing2[t,"HighValue"] <- "High"
+
+head(newhousing2)
+
+
+```
+
+#
+## ix.  Display a contingency table that shows the proprtions of HighValue split by Borough. Note that the table() function is the easiest way to tackle this problem but the table() function gives raw counts.
+
+
+```{r}
+
+contable <- table(newhousing2$HighValue, newhousing2$Borough)/numberrows
+contable
+
+# sum(contable)
+
+```
+
+#
+## x.  What is the proportion of properties whose values are in the upper quartile and are located in The Bronx?  Solve this question in two ways:  (1) by using the table from(ix), and (2) by using logical/relational commands and using the function mean().
+
+```{r}
+
+# Method 1
+contable["High", "Bronx"]
+
+
+# Method 2
+mean(ifelse(newhousing2[,"Borough"]=="Bronx" & newhousing2[,"HighValue"]=="High", 1, 0))
+
+# We used the ifelse function and matched the results based on two criteria 
+
+```
+
+## xi. Given a randomly selected property is in The Bronx, what is the probability that its value is in the upper quartile?  Solve this question in two ways:  (1) by using the table from (ix), and (2) by using logical/relational/filtering commands and using the function mean().
+
+
+```{r}
+
+# Method 1
+contable["High","Bronx"]*numberrows   # number of High values in Bronx
+sum(contable[,"Bronx"]*numberrows)    # total number of High+NotHigh values in Bronx
+
+contable["High","Bronx"]*numberrows / sum(contable[,"Bronx"]*numberrows)
+
+
+# Method 2
+
+highbronx <- (ifelse(newhousing2[,"Borough"]=="Bronx" & newhousing2[,"HighValue"]=="High", 1, 0))
+
+numberbronx <- sum((newhousing2$Borough=="Bronx"))  # total number of Bronx properties
+
+head(highbronx/numberbronx)
+
+# Again, we used ifelse to match results based on two criteria
+
+```
+
+### Given a property is in the Bronx, it has a 13.97% chance its value is above Q3.
+
+#
+## xii.  Create a new variable in the dataset called logValue that is equal to the logarithm of the property’s Value.  What are the minimum, median, mean, and maximum values oflogValue?
+
+
+```{r}
+
+logValue <- c(log(newhousing2$Value))
+newhousing3 <- data.frame(newhousing2, logValue)
+head(newhousing3)
+
+# call new dataframe "newhousing3"
+
+print("Minimum:")
+min(logValue)
+print("Median:")
+median(logValue)
+print("Mean:")
+mean(logValue)
+print("Maximum:")
+max(logValue)
+
+```
+
+## xiii.  Create a new variable in the dataset called logUnits that is equal to the logarithm of the number of units in the property.  The number of units in each piece of property is stored in the variable UnitCount.
+
+```{r}
+
+logUnits <- log(newhousing3$UnitCount)
+newhousing4 <- data.frame(newhousing3, logUnits)  # combine these two
+head(newhousing4)
+
+# call new dataframe "newhousing4"
+
+
+```
+
+
+## xiv.  Finally  create  a  new  variable  in  the  dataset  called after1950 which  equals TRUE if the property was built in or after 1950 and FALSE otherwise.  You’ll want to use the YearBuilt variable here.  This can be done in a single line of code.
+
+```{r}
+
+after1950 <- ifelse(newhousing4$YearBuilt >= "1950", TRUE, FALSE)
+newhousing5 <- data.frame(newhousing4, after1950)
+head(newhousing5)
+
+# call new dataframe "newhousing5"
+
+# newhousing4$YearBuilt[newhousing4$YearBuilt >= "1950"]
+ = <- 
+
+## (ii) just Manhattan
+
+```{r}
+
+man_rows <- which(newhousing5$Borough == "Manhattan")  # which rows have Manhattan as Borough?
+
+cor(newhousing5[man_rows,"logValue"], newhou <- 
+
+after1950_rows <- which(newhousing5$YearBuilt > "1950")  # which rows have YearBuilt as after 1950?
+
+cor(newhousing5[after1950_rows,"logValue"], newhousing5[after1950_rows,"logUnits"])
+
+
+```
+
+## (v) before 1950
+
+```{r}
+
+before1950_rows <- which(newhousing5$YearBuilt < "1950")  # which rows have YearBuilt as after 1950?
+
+cor(newhousing5[before1950_rows,"logValue"], newhousing5[before1950_rows,"logUnits"])
+
+
+```
+
+
+#
+
+## 2v.  Make a single plot showing property logValue against property logUnits for Manhattan and Brooklyn.  When creating this plot, clearly distinguish the two boroughs.
+
+
+
+```{r}
+
+plot(newhousing5[man_rows, "logValue"], newhousing5[man_rows, "logUnits"], col="red", xlab="", ylab="", axes=FALSE)
+par(new=TRUE)
+plot(newhousing5[brook_rows, "logValue"], newhousing5[brook_rows, "logUnits"], main = "log values vs. log units for Manhattan & Brooklyn", xlab="log units <- <- 
+```
+
+#
+
+## 2vi.  Consider the following block of code.  Give a single line of R code which gives the same final answer as the block of code.  There are a few ways to do this.
+
+
+manhat.props <- c()  
+
+for (props in 1:nrow(housing)) {
+if (housing$Borough[props] == "Manhattan") {
+manhat.props <- c(manhat.props, props)
+  }
+}
+
+med.value <- c()
+for (props in manhat.props) {
+med.value <- c(med.value, housing$Value[props])
+}
+
+med.value <- median(med.value, na.rm = TRUE)
+
+
+Summary of code:
+
+1. create empty vector manhat.props
+2. For all properties in rows 1 through 2000, if the property is in Manhattan, add it to the manhat.props vector
+3. create an empty vector med.value, for all properties in manhat.props, add housing value to the med.value vector
+4. med.value is the median of the med.values, exclusing na values
+
+
+
+
+```{r}
+
+
+median(newhousing5[(which(newhousing5$Borough == "Manhattan")), "Value"])
+
+```
+
+### This code is taking the median of Manhattan property values, which is $3,129,300.
+
+#
+
+## 2vii.  For  five  boroughs,  what  are  the  median  property  values?    (Use Value here,  not logValue.)
+
+
+```{r}
+
+print("Manhattan median value:")
+median(newhousing5[(which(newhousing5$Borough == "Manhattan")), "Value"])
+
+print("Brooklyn median value:")
+median(newhousing5[(which(newhousing5$Borough == "Brooklyn")), "Value"])
+
+print("Queens median value:")
+median(newhousing5[(which(newhousing5$Borough == "Queens")), "Value"])
+
+print("Bronx median value:")
+median(newhousing5[(which(newhousing5$Borough == "Bronx")), "Value"])
+
+print("Staten Island median value:")
+median(newhousing5[(which(newhousing5$Borough == "Staten Island")), "Value"])
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

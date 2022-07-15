@@ -1,0 +1,259 @@
+---
+title: "STATS5206 Homework 2"
+author: 'Maxime Grossman (UNI: mmg2240)'
+date: "5/20/2021"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+#
+
+# Part 1
+
+## Task 1
+
+### Using ggplot, as opposed to Base R, produce the same plot constructed by the following code. That is, plot Petal Length versus Sepal Length split by Species. The colors of the points should be split according to Species. Also overlay three regression lines on the plot, one for each Species level. Makesure to include an appropriate legend and labels to the plot. Note: The function coef() extracts the intercept and the slope of an estimated line.
+
+```{r}
+library(ggstar)
+library(ggplot2)
+
+
+```
+
+```{r}
+
+# find out which rows contain which species
+
+whichsetosa <- which(iris$Species == "setosa")
+whichvirginica <- which(iris$Species == "virginica")
+whichversicolor <- which(iris$Species == "versicolor")
+
+# regress each specie with its petal length and sepal length and take the coefficients of the regression line
+# we will use this for plotting the regression line
+
+lmsetosa <- coef(lm(iris$Petal.Length[whichsetosa]~iris$Sepal.Length[whichsetosa], data = iris))
+lmvirginica <- coef(lm(iris$Petal.Length[whichvirginica]~iris$Sepal.Length[whichvirginica], data = iris))
+lmversicolor <- coef(lm(iris$Petal.Length[whichversicolor]~iris$Sepal.Length[whichversicolor], data = iris))
+
+```
+
+
+```{r}
+
+ggplot(iris) +
+  geom_point(mapping = aes(x=Sepal.Length, y = Petal.Length, color = Species), shape=1, size=3)+ 
+  
+  geom_abline(intercept = lmsetosa[1], slope = lmsetosa[2], color="black")+ #, color="black") +
+  geom_abline(intercept = lmvirginica[1], slope = lmvirginica[2], color="green") + #, color="green") +
+  geom_abline(intercept = lmversicolor[1], slope = lmversicolor[2], color="red") +
+  
+  labs(title = "Gabriel's Plot", x = "Sepal", y = "Petal") +  # labs for labels
+  
+  theme(plot.title = element_text(hjust=0.5))+ # center title
+  
+  scale_color_manual(breaks = c("setosa", "virginica", "versicolor"),  # color the points
+                        values=c("black", "green", "red")) +
+  
+  geom_star(mapping=aes(x=5.8, y = 1.2), shape=1, size=1.2)+#, color = "black", shape=11)+
+  geom_star(mapping=aes(x=5.1, y = 3), shape=1, size=1.2, color="red")+#, color = "purple", shape=11)+
+  geom_star(mapping=aes(x=4.9, y = 4.5), shape=1, size=1.2, color="green")+  #, color = "purple", shape=11)
+  
+  annotate(geom="text", x=6.2, y=1.2, label = "(5.8, 1.2)", color="black") +
+  annotate(geom="text", x=5.5, y=3, label = "(5.1, 3)", color="red") +
+  annotate(geom="text", x=4.9, y=4.9, label = "(4.9, 4.5)", color="green") +
+  
+  theme(legend.position = c(0.92, 0.50), legend.background = element_rect(fill = "white", color = "black", linetype = 1), legend.title = element_blank()) +
+  
+  theme_bw() +
+  theme(panel.grid = element_blank()) +
+  
+  theme(legend.position = c(0.92, 0.50), legend.background = element_rect(fill = "white", color = "black", linetype = 1), legend.title = element_blank()) +
+  
+    theme(plot.title = element_text(hjust=0.5))  # center the title
+
+
+
+
+# Here is something else we could've done which is much simpler, but it wouldn't have plotted regression lines that run indefinitely
+
+
+#ggplot(iris, aes(Sepal.Length, Petal.Length, color=Species)) +
+#  geom_point() +
+# geom_smooth(method = "lm", se=FALSE)+
+#  labs(title = "Sepal Length vs. Petal Length for All Species", x = "Sepal Length", y = "Petal Length") +
+#  geom_abline(intercept = 0, slope = 2)
+
+
+```
+
+#
+
+# Part 2
+
+## Task 2
+
+### Open the file and make a new variable (dataframe) containing only the year, “P99”, “P99.5” and “P99.9” variables; these are the income levels which put someone at the 99th, 99.5th, and 99.9th, percentile of income. What was P99 in 1993? P99.5 in 1942? You must identify these using your code rather than looking up the values manually. The code for this part is given below.
+
+
+```{r}
+
+wtid_report <- read.csv("wtid-report.csv")
+
+wtid_report2 <- wtid_report[,c("Year", "P99.income.threshold","P99.5.income.threshold", "P99.9.income.threshold")]
+
+head(wtid_report2)
+
+
+# P99 in 1993
+
+wtid_report2[wtid_report2$Year=="1993", "P99.income.threshold"]
+
+# P99.5 in 1942
+
+wtid_report2[wtid_report2$Year=="1942", "P99.5.income.threshold"]
+
+
+```
+
+### P99 in 1993 was 273,534.9
+### P99.5 in 1942 was 189,140.6
+
+#
+
+## Task 3
+
+### Using ggplot, display three line plots on the same graph showing the income threshold amount against time for each group, P99, P99.5 and P99.9. Make sure the axes are labeled appropriately, and in particular that the horizontal axis is labeled with years between 1913 and 2012, not just numbers from 1 to 100. Also make sure a legend is displayed that describes the multiple time series plot. Write one or two sentences describing how income inequality has changed throughout time.
+
+
+```{r}
+
+
+fac <- factor((subset(wtid_report2, select = c("P99.income.threshold","P99.5.income.threshold", "P99.9.income.threshold"))))
+
+
+plot <- ggplot(data = wtid_report2) +
+  geom_line(mapping = aes(x=Year, y = P99.income.threshold, color="P99"))+
+  geom_line(mapping = aes(x=Year, y = P99.5.income.threshold, color="P99.5"))+
+  geom_line(mapping = aes(x=Year, y = P99.9.income.threshold, color="P99.9"))+
+  labs(title = "Income Over Time of Top Percentile Earners", x = "Year", y = "Income")
+
+plot 
+
+```
+
+
+### Income disparity seems to have increased in recent years. We can see that the 99.9 percentile has seen its income level exponentially increase since the late 1980s at a dramatic rate, while the 99.5 and 99 percentiles have seen a steady, somewhat linear increase.
+
+#
+
+# Part 3
+
+## Task 4
+
+### Run the following code and describe what the two plots are producing.
+
+```{r}
+
+# Read in data
+titanic <- read.table("Titanic.txt", header = TRUE, as.is = TRUE)
+head(titanic)
+
+library(ggplot2)
+# Plot 1
+ggplot(data=titanic) +
+geom_bar(aes(x=Sex,fill=factor(Survived)))+
+labs(title = "Title",fill="Survived")
+
+# plot 2
+ggplot(data=titanic) +
+geom_bar(aes(x=factor(Survived),fill=factor(Survived)))+
+facet_grid(~Sex)+
+labs(title = "Title",fill="Survived",x="")
+
+
+```
+
+
+### The two plots are showing the count of survivors of the Titanic segmented by sex. We can see that a much higher rate and total value of females survived than males.
+
+#
+
+## Task 5
+
+###  Create a similar plot with the variable Pclass. The easiest way to produce this plot is to facet by Pclass. Make sure to include appropriate labels and titles. Describe your graph.
+
+```{r}
+
+# mortality by class
+
+ggplot(data=titanic) +
+geom_bar(aes(x=factor(Survived),fill=factor(Survived)))+
+facet_grid(~Pclass)+
+labs(title = "Mortalities on the Titanic",fill="Survived",x="Mortality Counts by 1st, 2nd, & 3rd Class",y="Survivals and Deaths") +
+scale_fill_discrete(name = "Mortality", labels = c("0=Died", "1=Survived"))
+
+# mortality by class and sex
+
+ggplot(data=titanic) +
+geom_bar(aes(x=factor(Survived),fill=factor(Survived)))+
+facet_grid(Sex~Pclass)+
+labs(title = "Mortalities on the Titanic",fill="Survived",x="Mortality Counts by 1st, 2nd, & 3rd Class Faceted by Gender",y="Survivals and Deaths")+
+  scale_fill_discrete(name = "Mortality", labels = c("0=Died", "1=Survived"))
+
+
+
+```
+
+### We can clearly observe that many more occupants in the 3rd class perished as compared with the 1st and 2nd class. Also, it's easy to see that many more males perished than females. In the 1st and 2nd class, the number of women who perished is extremely low. The number of women in the 1st class who perished might well be in the single digits.
+
+#
+
+## Task 6
+
+###  Create one more plot of your choice related to the titanic data set. Describe what information your plot is conveying
+
+```{r}
+
+
+ggplot(data=titanic) +
+geom_bar(aes(x=Age,fill=factor(Survived)))+
+facet_grid(~Survived)+
+labs(title = "Mortalities on the Titanic",fill="Survived",x="Mortality Counts by Age",y="Survivals and Deaths")+
+scale_fill_discrete(name = "Mortality", labels = c("0=Died", "1=Survived"))
+  
+
+```
+
+### This plot is segmenting survivals and deaths by age group. We can see that the majority of deaths occurred in occupants in their twenties and early thirties. We also see a spike in deaths of very young ages ten years and younger. However, we also see the highest survival rate at ages around early 20s. This would lead us to believe that in general, most occupants aboard the Titanic were in their twenties and early thirties.
+
+#
+
+# Part 4
+
+## Task 7
+
+### Simulate a n = 1000 random draws from a beta distribution with parameters α = 3 and β = 1. Plot a histogram of the simulated cases using ggplot. Also overlay the beta density on the histogram. Hint: look up the beta distribution using ?rbeta.
+
+```{r}
+
+
+x <- seq(0,0.99,by=.01)
+hist_data <- data.frame(x.var=rbeta(1000, 3,1))  # simulate 1000 standard normals for histogram
+plot_data <- data.frame(x=x, f=dbeta(x, 3, 1))  # for plotting pdf
+
+
+ggplot(hist_data) +
+  geom_histogram(mapping = aes(x=x.var, y=..density..),
+                 col="red", fill="yellow", binwidth=.01, cex=1) +=
+  geom_line(plot_data, mapping=aes(x=x,y=f),
+            col="green", cex=2)+
+  labs(title="Plotting Simulated Beta vs Beta Distribution", x="x", y = "Density")
+
+```
+
+
+
+
+
